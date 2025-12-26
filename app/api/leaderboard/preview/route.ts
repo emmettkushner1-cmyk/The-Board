@@ -5,8 +5,9 @@ import { getMonthKey } from "../../../../lib/utils";
 export async function POST(request: Request) {
   const supabase = createRouteSupabaseClient();
   const {
-    data: { user }
+    data: { user },
   } = await supabase.auth.getUser();
+
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -22,25 +23,31 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   const monthKey = getMonthKey();
+
   const { data: rows, error } = await supabase
     .from("monthly_spend")
     .select("amount_cents,user_id,profiles(country,state,city,created_at)")
     .eq("month_key", monthKey)
-    .order("amount_cents", { ascending: false })
-    .order("created_at", { ascending: true, foreignTable: "profiles" });
+    .order("amount_cents", { ascending: false });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
   const createdAt = profile?.created_at ?? new Date().toISOString();
+
   const computeRank = (list: typeof rows) => {
     let rank = 1;
-    list?.forEach((entry) => {
+    (list ?? []).forEach((entry) => {
       if (entry.amount_cents > amountCents) {
         rank += 1;
-      } else if (entry.amount_cents === amountCents) {
-        if ((entry.profiles?.created_at ?? "") < createdAt) {
+        return;
+      }
+
+      if (entry.amount_cents === amountCents) {
+        // Supabase nested select returns `profiles` as an array
+        const p = entry.profiles?.[0];
+        if ((p?.created_at ?? "") < createdAt) {
           rank += 1;
         }
       }
@@ -52,9 +59,14 @@ export async function POST(request: Request) {
 
   const localRows = (rows ?? []).filter((entry) => {
     if (!profile?.country) return false;
-    if (entry.profiles?.country !== profile.country) return false;
-    if (profile.state && entry.profiles?.state !== profile.state) return false;
-    if (profile.city && entry.profiles?.city !== profile.city) return false;
+
+    const p = entry.profiles?.[0];
+    if (!p) return false;
+
+    if (p.country !== profile.country) return false;
+    if (profile.state && p.state !== profile.state) return false;
+    if (profile.city && p.city !== profile.city) return false;
+
     return true;
   });
 
