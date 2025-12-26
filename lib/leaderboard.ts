@@ -59,9 +59,7 @@ export async function getLeaderboard(
   if (error) throw error;
 
   const entries: LeaderboardEntry[] = (data ?? []).map((row: any) => {
-    // Supabase nested select returns `profiles` as an array
-    const p = row.profiles?.[0];
-
+    const p = row.profiles?.[0]; // profiles is an array
     return {
       user_id: row.user_id,
       amount_cents: row.amount_cents,
@@ -75,7 +73,6 @@ export async function getLeaderboard(
   });
 
   if (scope === "global") return entries;
-
   return entries.filter((entry) => scopeFilters[scope](entry, location));
 }
 
