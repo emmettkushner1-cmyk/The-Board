@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-board-black text-white;
+}
+
+.gradient-card {
+  background: radial-gradient(circle at top, rgba(109, 93, 252, 0.35), transparent 55%), #111118;
+}
