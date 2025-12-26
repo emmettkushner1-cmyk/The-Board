@@ -56,9 +56,7 @@ export async function getLeaderboard(
     .eq("month_key", monthKey)
     .order("amount_cents", { ascending: false });
 
-  if (error) {
-    throw error;
-  }
+  if (error) throw error;
 
   const entries: LeaderboardEntry[] = (data ?? []).map((row: any) => {
     // Supabase nested select returns `profiles` as an array
